@@ -14,7 +14,7 @@ https://speed.cloudflare.com/
 
 下载速度可以达到8.5MB/s， 要知道之前我使用的机场， 下载速度只有数百KB。 一个数量级的提升。 这样的速度足以应付我的日常搬砖工作。 
 
-![image-20240318182950576](/Users/wanghe/Work/PandaBearLab.github.io/images/image-20240318182950576.png)
+![image-20240318182950576](./images/image-20240318182950576.png)
 
 
 
