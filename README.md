@@ -2,8 +2,6 @@
 
 
 
-## 前言
-
 我目前的网络速度
 
 https://speed.cloudflare.com/
@@ -12,15 +10,21 @@ https://speed.cloudflare.com/
 
 在很多大佬面前， 我这个速度是拖后腿了， 不过对于我做开发来讲， 完全够用了。 安装软件依赖包， 不需要设置镜像代理了
 
-
-
 实际从境外站点下载速度实测， 以下截图是我下载大模型的文件的速度：
 
 下载速度可以达到8.5MB/s， 要知道之前我使用的机场， 下载速度只有数百KB。 一个数量级的提升。 这样的速度足以应付我的日常搬砖工作。 
 
+![image-20240318182950576](/Users/wanghe/Work/PandaBearLab.github.io/images/image-20240318182950576.png)
 
 
 
+- 前端项目安装依赖基本上不在会国内境像折腾版本的问题了
+
+- go的依赖也不会再去配置goproxy 环境变量了
+
+- homebrew安装软件基本上是秒级了，基本上没有要下载一个大型软件包了
+
+  
 
 
 
@@ -50,13 +54,16 @@ https://speed.cloudflare.com/
 
   > 给大家举例子， 不久前我们自建了套壳的gpt网站， 一些普通用户使用我们的网站提问或聊天， 我在后台可以看到聊天的全部内容， 建议大家选择套壳的gpt，一定要慎重啊
 
-- 稳定： 小流量个人使用， 从速度上， 稳定性上， 会一般便宜的机场更好。  
+- 稳定： 小流量个人使用， 从速度上， 稳定性上， 会比一般便宜的机场更好。  
 
 ## 自建成本考虑
 
 就我目前的情况， 主要的费用包括：
 
 - 服务器： $169.99/年
+
+> 搬瓦工上买的
+
 - 域名：godaddy 申请的美国域名， 价格很便宜，我花37新台币（大概不10元人民币）
 
 > 要注意： godaddy 第二年续费的时候就会很高了。 可以第二年更换一个域名。 
@@ -67,10 +74,6 @@ https://speed.cloudflare.com/
 
 - 成本价格。肯定是会比机场贵。 自建服务器的成本可以买一个高规格的机场服务。 性能和稳定性上应该也会达到自建服务器的水准。 不过需要你找到靠普的机场服务商。  
 - 搭建与维护。 折腾这个会比较费时间。  当然也是可以练习网络技能， 这也是一种动手学习的机会。  尤其是学生朋友们， 通过自己动手实践， 更能体其中的乐趣。 也会学到更多关于计算机网络协议、服务器有关的一些知识。  
-
-
-
-
 
 
 
@@ -279,7 +282,37 @@ crontab -e
 5 0 1 * * /usr/bin/docker restart gost
 ```
 
-## 安装配置
+> 1. 第一个任务：
+>    - 时间规则：在每个月的第1天的0点0分执行。
+>    - 命令：`/usr/bin/certbot renew --force-renewal`，这是用于自动更新SSL证书的命令。
+> 2. 第二个任务：
+>    - 时间规则：在每个月的第1天的0点5分执行。
+>    - 命令：`/usr/bin/docker restart gost`，这是用于重启名为"gost"的Docker容器的命令。
+
+
+
+> 推荐用docker来部署服务， 如果不喜欢， 可以将上面重启gost的方法换成bash脚本
+
+**restart_gost.sh** 
+
+```bash
+#!/bin/sh
+killall gost
+./run_gost.sh
+```
+
+
+
+```
+0 0 1 * * /usr/bin/certbot renew --force-renewal
+5 0 1 * * /usr/bin/docker restart gost
+```
+
+
+
+
+
+## 部署gost
 
 [gost 项目地址](https://github.com/ginuerzh/gost)
 
@@ -288,6 +321,10 @@ crontab -e
 gost 配置， 可以选择使用docker 安装部署， 也可以直接跑起来。  
 
 
+
+
+
+**run_gost.sh**
 
 ```bash
 #!/bin/bash
@@ -298,6 +335,26 @@ user=xxxxx
 password=yyyyy
 
 gost -L "http2://${user}:${password}@0.0.0.0:${port}?cert=/etc/letsencrypt/live/${domain}/fullchain.pem&key=/etc/letsencrypt/live/${domain}/privkey.pem&probe_resist=file:/var/www/html/index.html&knock=www.google.com" > /dev/null 2>&1 &
+```
+
+
+
+**run_gost_in_docker.sh**
+
+用docker部署容器的脚本
+
+```bash
+#!/bin/bash
+
+port=443
+domain=www.example.com
+user=xxxxx
+password=yyyyy
+
+sudo docker run -d --name gost \
+    -v ${CERT_DIR}:${CERT_DIR}:ro \
+    --net=host ginuerzh/gost \
+    -L "http2://${user}:${password}@0.0.0.0:${port}?cert=/etc/letsencrypt/live/${domain}/fullchain.pem&key=/etc/letsencrypt/live/${domain}/privkey.pem&probe_resist=file:/var/www/html/index.html&knock=www.google.com"
 ```
 
 
@@ -313,8 +370,26 @@ PC端： 推荐clash
 
 
 > 移动端需要一个境外手机号， 可以在淘宝搜paygo 买一个3$月租的电话卡， 可以自行充值 
->
-> 
+
+
+
+
+
+### clash 配置
+
+
+
+![clash_config](./images/clash_config.png)
+
+
+
+
+
+**将这个[clash 配置文件](./scripts/run_gost.sh) 修改用户名和密码后， 放到这个目录下面。** 
+
+
+
+![image-20240320151741280](./images/clash_reload_config.png)
 
 
 
@@ -322,17 +397,13 @@ PC端： 推荐clash
 
 
 
-以上的自建的方法， 并不是万无一失的， 就像软件工程没有银弹，  采用https 协议，伪装正常的web流量， 仍然有很大的概率会被封IP 
-
-还有其他的方法。 
+以上的自建的方法， 并不是万无一失的，  采用https 协议，伪装正常的web流量， 仍然有很大的概率会被封IP 
 
 你可以考虑在cloudflare 上进行套壳访问， 即便vps被封了， 也能继续使用这台服务器。  
 
-
-
 本文的上网方法不一定是最好的， 是我亲自测试验证过， 目前使用了一个月， 还没有遇到问题。 目前家庭3-5个人日常使用豪无压力， 我还可以在上面部署个人的博客。  
 
-水平有限， 文中难免会有错误， 欢迎提出来， 也欢迎你分享自己上网的解决方法。 
+水平有限， 文中难免会有错误， 如果有错误请提出来帮助我修改。
 
 
 
