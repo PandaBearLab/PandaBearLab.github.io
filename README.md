@@ -384,13 +384,18 @@ PC端： 推荐clash
 
 
 
-
 **将这个[clash 配置文件](./scripts/run_gost.sh) 修改用户名和密码后， 放到这个目录下面。** 
-
 
 
 ![image-20240320151741280](./images/clash_reload_config.png)
 
+
+## 端口转发
+有些时候我们使使用软件，如telegram 只支持socks5 代理， 因此我们可以在本地开一个socks5的端口服务， 将流量转发给clash开发的http服务，端口是7890 
+
+```bash
+gost -L=:1080 -F=http://127.0.0.1:7890 > /dev/null 2>&1 &
+```
 
 
 # 最后
